@@ -800,6 +800,23 @@ function onDeckTile(){
   const tx=Math.floor(player.x/TILE), ty=Math.floor(player.y/TILE);
   return deckAt(tx,ty);
 }
+// a água (sem deck) bloqueia este ponto?
+function waterBlocksAt(px,py,r){
+  px=wrap(px,WPX); py=wrap(py,WPY);
+  for(const [ox,oy] of [[-r,-r],[r,-r],[-r,r],[r,r]]){
+    const tx=Math.floor(wrap(px+ox,WPX)/TILE), ty=Math.floor(wrap(py+oy,WPY)/TILE);
+    if(tileAt(tx,ty)===0&&!deckAt(tx,ty)) return true;
+  }
+  return false;
+}
+// entra nadando sozinho ao andar para dentro da água
+function autoSwim(){
+  if(player.sailing||player.swimming) return;
+  player.swimming=true; player.fishing=null;
+  burst(player.x,player.y,"#7dd3fc",8);
+  if(!player.stats.swam){ player.stats.swam=true; toast("🏊 Nadando! 🌬️ de olho no fôlego",2300); }
+  updateHUD();
+}
 // sair da água (desembarcar ou parar de nadar) na terra/deck mais próxima
 function leaveWater(){
   const ox=player.x, oy=player.y, os=player.sailing, ow=player.swimming;
@@ -2269,7 +2286,19 @@ function loop(ts){
     const len=Math.hypot(dx,dy); if(len>1){dx/=len;dy/=len;}
     const nx=wrap(player.x+dx*sp*dt,WPX), ny=wrap(player.y+dy*sp*dt,WPY);
     if(!playerCollidesAt(nx,player.y,player.r)) player.x=nx;
+    else if(!player.sailing&&!player.swimming&&waterBlocksAt(nx,player.y,player.r)){
+      autoSwim();
+      if(!playerCollidesAt(nx,player.y,player.r)) player.x=nx;
+    }
     if(!playerCollidesAt(player.x,ny,player.r)) player.y=ny;
+    else if(!player.sailing&&!player.swimming&&waterBlocksAt(player.x,ny,player.r)){
+      autoSwim();
+      if(!playerCollidesAt(player.x,ny,player.r)) player.y=ny;
+    }
+    if(player.swimming&&!player.sailing){
+      const cx=Math.floor(player.x/TILE), cy=Math.floor(player.y/TILE);
+      if(!waterAt(cx,cy)||deckAt(cx,cy)) player.swimming=false; // saiu andando: para de nadar
+    }
     if(player.fishing) player.fishing=null; // mexeu: recolhe a vara
     if(player.mounted){ player.mounted.x=player.x; player.mounted.y=player.y; }
   } else {

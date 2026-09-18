@@ -46,7 +46,7 @@ Só **2 botões de ação** na barra (🍖 comer, 🔥 tocha) + Criar e Construi
 - **Deck ⚓** (🪵6 no Construir): píer sobre a água junto à margem — ande por ele e embarque direto.
 - **Vara 🎣** (🪵3+🌾2): **E** de frente para a água, espere o ❗ e aperte **E** para fisgar (fundo dá mais peixe e pérolas 🦪).
 - **Tarrafa 🕸️** (🌾5+🪵1): **R** (ou botão 🕸️ no celular) mirando a água — pega até 4 peixes/lulas do cardume.
-- **Mergulho 🏊**: **E** na água sem barco — explore o fundo (🌿 algas, 🦪 ostras, 🪸 corais) de olho na barra de **fôlego 🌬️** (~25s; sem ar perde vida).
+- **Mergulho 🏊**: **ande para dentro da água** para nadar (ou **E** na margem sem barco) — explore o fundo (🌿 algas, 🦪 ostras, 🪸 corais) de olho na barra de **fôlego 🌬️** (~25s; sem ar perde vida).
 - **Vida marinha**: 🐟 peixes, 🦑 lulas, 🐋 baleias (gentis, esbarram no barco), 🦈 tubarões (caçam quem está na água!) e 🐙 polvo gigante no fundo (forte, dropa pérola).
 
 ## ▶️ Como jogar
