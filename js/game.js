@@ -777,7 +777,6 @@ function playerCollidesAt(px,py,r){
   for(const [ox,oy] of [[-r,-r],[r,-r],[-r,r],[r,r]]){
     const tx=Math.floor(wrap(px+ox,WPX)/TILE), ty=Math.floor(wrap(py+oy,WPY)/TILE);
     const t=tileAt(tx,ty);
-    if(t===4) return true;
     if(t===0){
       if(player&&(player.sailing||player.swimming)) continue;
       if(deckAt(tx,ty)) continue;
@@ -2210,16 +2209,17 @@ function render(){
 }
 function nightAlphaUnused(){return 0;}
 function drawMinimap(){
-  const S=128;
+  const S=128, Z=4; // zoom: 4px por tile (~32 tiles visíveis, segue o player)
   mctx.clearRect(0,0,S,S);
   mctx.save();
   mctx.beginPath(); mctx.arc(S/2,S/2,S/2-1,0,7); mctx.clip();
+  const pcx=player.x/TILE, pcy=player.y/TILE;
   const img=mctx.createImageData(S,S);
   for(let y=0;y<S;y++)for(let x=0;x<S;x++){
     const dx=x-S/2, dy=y-S/2;
     let r=5,g=8,b=20;
     if(dx*dx+dy*dy<=(S/2)*(S/2)){
-      const t=tileAt(x,y);
+      const t=tileAt(Math.floor(pcx+dx/Z),Math.floor(pcy+dy/Z));
       if(t===0){r=38;g=100;b=190}else if(t===1){r=222;g=203;b=140}
       else if(t===2){r=74;g=150;b=70}else if(t===3){r=40;g=110;b=50}
       else{r=130;g=130;b=140}
@@ -2227,22 +2227,28 @@ function drawMinimap(){
     const i=(y*S+x)*4; img.data[i]=r;img.data[i+1]=g;img.data[i+2]=b;img.data[i+3]=255;
   }
   mctx.putImageData(img,0,0);
+  // pontos relativos ao player (mundo redondo: usa a menor distância)
+  const dot=(wx,wy)=>[S/2+wdx(wx,player.x,WPX)/TILE*Z, S/2+wdx(wy,player.y,WPY)/TILE*Z];
+  const inCircle=(sx,sy)=>{const dx=sx-S/2,dy=sy-S/2;return dx*dx+dy*dy<(S/2-2)*(S/2-2);};
   mctx.fillStyle="#f59e0b";
-  for(const b of buildings) mctx.fillRect(b.tx,b.ty,1,1);
+  for(const b of buildings){ const [sx,sy]=dot(b.tx*TILE+16,b.ty*TILE+16); if(inCircle(sx,sy)) mctx.fillRect(sx,sy,2,2); }
   for(const p of pois){
-    if(p.kind==="chest"){ mctx.fillStyle="#ffd166"; mctx.fillRect(p.tx,p.ty,2,2); }
-    else if(p.kind==="crystal"){ mctx.fillStyle="#c084fc"; mctx.fillRect(p.tx,p.ty,1,1); }
-    else if(p.kind==="obelisk"&&p.cd<=0){ mctx.fillStyle="#7dd3fc"; mctx.fillRect(p.tx,p.ty,2,2); }
-    else if(p.kind==="cave"){ mctx.fillStyle="#3f3f46"; mctx.fillRect(p.tx,p.ty,2,2); }
+    const [sx,sy]=dot(p.tx*TILE+16,p.ty*TILE+16);
+    if(!inCircle(sx,sy)) continue;
+    if(p.kind==="chest"){ mctx.fillStyle="#ffd166"; mctx.fillRect(sx,sy,3,3); }
+    else if(p.kind==="crystal"){ mctx.fillStyle="#c084fc"; mctx.fillRect(sx,sy,2,2); }
+    else if(p.kind==="obelisk"&&p.cd<=0){ mctx.fillStyle="#7dd3fc"; mctx.fillRect(sx,sy,3,3); }
+    else if(p.kind==="cave"){ mctx.fillStyle="#3f3f46"; mctx.fillRect(sx,sy,3,3); }
   }
   mctx.fillStyle="#22d3ee";
-  for(const c of critters) if(c.pet||c===player.mounted) mctx.fillRect(Math.floor(wrap(c.x,WPX)/TILE)-1,Math.floor(wrap(c.y,WPY)/TILE)-1,3,3);
+  for(const c of critters) if(c.pet||c===player.mounted){ const [sx,sy]=dot(c.x,c.y); if(inCircle(sx,sy)) mctx.fillRect(sx-1,sy-1,4,4); }
   mctx.fillStyle="#7dd3fc";
-  for(const s of sealife) mctx.fillRect(Math.floor(wrap(s.x,WPX)/TILE),Math.floor(wrap(s.y,WPY)/TILE),1,1);
+  for(const s of sealife){ const [sx,sy]=dot(s.x,s.y); if(inCircle(sx,sy)) mctx.fillRect(sx,sy,2,2); }
   mctx.fillStyle="#ff4444";
-  for(const e of enemies) mctx.fillRect(Math.floor(wrap(e.x,WPX)/TILE),Math.floor(wrap(e.y,WPY)/TILE),1,1);
-  mctx.fillStyle="#fff";
-  mctx.fillRect(Math.floor(wrap(player.x,WPX)/TILE)-1,Math.floor(wrap(player.y,WPY)/TILE)-1,3,3);
+  for(const e of enemies){ const [sx,sy]=dot(e.x,e.y); if(inCircle(sx,sy)) mctx.fillRect(sx,sy,2,2); }
+  if(player.sailing||player.swimming) mctx.fillStyle="#38bdf8";
+  else mctx.fillStyle="#fff";
+  mctx.fillRect(S/2-2,S/2-2,5,5);
   mctx.restore();
   mctx.strokeStyle="rgba(255,255,255,.8)";mctx.lineWidth=2;
   mctx.beginPath();mctx.arc(S/2,S/2,S/2-1,0,7);mctx.stroke();
