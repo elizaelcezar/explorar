@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="theme-color" content="#0b0e1a" />
+<title>Pixel Planetas — sobreviva, evolua, explore</title>
+<meta name="description" content="Você acorda sem nada num planeta desconhecido. Sobreviva, evolua, construa um foguete e explore novos planetas." />
+<link rel="stylesheet" href="css/style.css" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><circle cx='8' cy='8' r='7' fill='%233fb950'/><circle cx='5' cy='6' r='2' fill='%237b4a2b'/></svg>" />
+</head>
+<body>
+<div id="app">
+  <header id="topbar">
+    <div class="logo">🪐 PIXEL PLANETAS</div>
+    <div id="planet-chip" title="Planeta atual">🌿 Verde • Dia 1 • ☀️</div>
+      <div class="top-actions">
+        <button id="btn-sound" title="Som">🔊</button>
+      </div>
+  </header>
+
+  <main id="game-wrap">
+    <canvas id="game" width="960" height="600"></canvas>
+
+    <div id="hud">
+      <div id="stats">
+        <div class="bar-row"><span class="ico">❤️</span><div class="bar"><div id="bar-hp"></div></div><span id="txt-hp" class="bar-txt">100</span></div>
+        <div class="bar-row"><span class="ico">🍖</span><div class="bar"><div id="bar-hunger"></div></div><span id="txt-hunger" class="bar-txt">100</span></div>
+        <div class="bar-row"><span class="ico">⚡</span><div class="bar"><div id="bar-stamina"></div></div><span id="txt-stamina" class="bar-txt">100</span></div>
+        <div class="bar-row" id="breath-row"><span class="ico">🌬️</span><div class="bar"><div id="bar-breath"></div></div><span id="txt-breath" class="bar-txt">25</span></div>
+        <div id="level-row">Nv <b id="level">1</b> • <b id="xp">0</b>/<span id="xp-next">60</span> • 🗡️<span id="atk">8</span> <span id="shelter-ico" title="Protegido pelo abrigo">🛡️</span></div>
+        <div id="xp-bar"><div id="xp-fill"></div></div>
+      </div>
+      <canvas id="minimap" width="128" height="128"></canvas>
+    </div>
+
+    <div id="objective"><span id="obj-title">Sobreviva</span><div id="obj-progress"><div id="obj-fill"></div></div></div>
+
+    <div id="hotbar">
+      <button class="slot" id="slot-eat" title="Comer (Q) — escolhe a melhor comida sozinho">🍖 <b id="c-food">0</b><small>Q</small></button>
+      <button class="slot" id="slot-torch" title="Tocha (T)">🔥 <b id="c-torch">0</b><small>T</small></button>
+      <div class="slot res" title="Madeira">🪵 <b id="c-wood">0</b></div>
+      <div class="slot res" title="Pedra">🪨 <b id="c-stone">0</b></div>
+      <div class="slot res" title="Fibra">🌾 <b id="c-fiber">0</b></div>
+      <div class="slot res" title="Ferramentas">🪓 <b id="c-tools">0</b></div>
+    </div>
+
+    <div id="context-tip" class="hidden"></div>
+    <div id="boss-bar" class="hidden">👑 <div class="bar"><div id="boss-fill"></div></div></div>
+    <div id="bigmap-wrap" class="hidden"><canvas id="bigmap" width="384" height="384"></canvas><p>toque para fechar ✖</p></div>
+    <div id="toast-wrap"></div>
+    <div id="hint"><b>E</b> agir • <b>R</b> tarrafa • <b>Q</b> comer • <b>T</b> tocha • <b>C</b> criar • <b>B</b> construir</div>
+
+    <div id="side-actions">
+      <button id="btn-craft" title="Criar (C)">🛠️<small>criar</small></button>
+      <button id="btn-build" title="Construir (B)">🏠<small>construir</small></button>
+    </div>
+
+    <div id="touch-controls">
+      <div id="joystick"><div id="stick"></div></div>
+      <div id="touch-btns">
+        <button id="t-act" title="Agir (= E)">✋<small>agir</small></button>
+        <button id="t-atk" title="Atacar">⚔️<small>atacar</small></button>
+        <button id="t-net" title="Tarrafa (= R)">🕸️<small>rede</small></button>
+        <button id="t-eat" title="Comer">🍖<small>comer</small></button>
+        <button id="t-torch" title="Tocha">🔥<small>tocha</small></button>
+      </div>
+    </div>
+  </main>
+
+  <div id="panel-craft" class="panel hidden">
+    <div class="panel-head"><h2>🛠️ Criar <small>(C fecha)</small></h2><button class="close" data-close="panel-craft">✖</button></div>
+    <div id="recipes" class="recipes"></div>
+  </div>
+
+  <div id="panel-build" class="panel hidden">
+    <div class="panel-head"><h2>🏠 Construir <small>(B fecha • clique no chão • botão direito cancela)</small></h2><button class="close" data-close="panel-build">✖</button></div>
+    <div id="builds" class="recipes"></div>
+  </div>
+
+  <div id="panel-travel" class="panel hidden">
+    <div class="panel-head"><h2>🚀 Para onde voar? <small>(E fecha)</small></h2><button class="close" data-close="panel-travel">✖</button></div>
+    <div id="travel-cards" class="recipes"></div>
+  </div>
+
+  <div id="panel-help" class="panel hidden">
+    <div class="panel-head"><h2>❓</h2><button class="close" data-close="panel-help">✖</button></div>
+    <div class="help-grid">
+      <div><h3>🪐 A ideia</h3><p>Você acorda <b>sem nada</b> num planeta redondo — dê a volta e você volta ao mesmo lugar. Sobreviva, evolua, construa um <b>foguete 🚀</b> e explore os outros planetas. Cada um tem seus perigos.</p></div>
+      <div><h3>🕹️ Só isso</h3><ul>
+        <li><b>WASD</b> mover • <b>clique / espaço</b> atacar</li>
+        <li><b>E</b> agir no que estiver perto (coletar, pegar, embarcar, pescar, mergulhar)</li>
+        <li><b>R</b> jogar a tarrafa 🕸️ na água • <b>Q</b> comer • <b>T</b> tocha • <b>C</b> criar • <b>B</b> construir</li>
+        <li>📱 No celular: joystick move • <b>✋ agir</b> (= E) • toque na dica amarela também age • toque no 🗺️ abre o mapa grande</li>
+      </ul></div>
+      <div><h3>🌍 Planetas</h3><ul>
+        <li>🌿 <b>Verde</b> — tranquilo. Aprenda aqui.</li>
+        <li>🏜️ <b>Kharos</b> — calor: a fome cai rápido de dia.</li>
+        <li>❄️ <b>Glacius</b> — frio: fique perto do fogo.</li>
+        <li>🌑 <b>Noctis</b> — noite eterna, XP em dobro, muito perigo.</li>
+      </ul></div>
+      <div><h3>🌊 Mar</h3><ul>
+        <li>Crie <b>⛵ Barco</b> e aperte <b>E</b> na margem para navegar (E de novo p/ desembarcar).</li>
+        <li><b>🎣 Vara</b>: E de frente p/ água, espere fisgar e aperte <b>E</b> de novo.</li>
+        <li><b>🕸️ Tarrafa</b>: <b>R</b> mirando a água — pega cardumes inteiros.</li>
+        <li><b>E</b> na água sem barco = <b>mergulho</b> 🌬️ (fôlego limitado!). Fundo do mar tem 🪸🦪.</li>
+        <li>Cuidado: 🦈 tubarões caçam quem está na água; 🐙 polvo gigante mora no fundo.</li>
+        <li><b>Deck</b> (B): píer sobre a água — caminhe e embarque por ele.</li>
+      </ul></div>
+      <div><h3>💡 Dicas</h3><ul>
+        <li>Siga a missão no canto da tela.</li>
+        <li>Abrigo ⛺ protege e cura. Fogueira cozinha a carne.</li>
+        <li>🎁 baús, 🔮 cristais, 🌿 ervas, 🗿 obeliscos e 🏛️ ruínas — aperte <b>E</b> perto deles.</li>
+        <li>De dia os mortos queimam ☀️. À noite, luz e abrigo.</li>
+      </ul></div>
+    </div>
+  </div>
+
+  <div id="screen-start" class="screen">
+    <div class="card">
+      <div class="pixel-title">PIXEL PLANETAS</div>
+      <div class="subtitle">você acorda sem nada • num mundo redondo • desconhecido</div>
+      <p>Sobreviva. Evolua. Construa um foguete. Descubra o que há nos outros planetas.</p>
+      <ul class="feat">
+        <li>🌿 Verde — lar tranquilo para aprender</li>
+        <li>🏜️ Kharos ☠️☠️ — o calor devora sua comida</li>
+        <li>❄️ Glacius ☠️☠️☠️ — o frio queima sem fogo por perto</li>
+        <li>🌑 Noctis ☠️☠️☠️☠️ — noite eterna, XP em dobro</li>
+      </ul>
+      <button id="btn-start">▶ Acordar</button>
+      <button id="btn-continue" class="ghost hidden">📂 Continuar</button>
+      <p class="controls-hint">WASD move • E age • Q come • T tocha • <a href="#" id="link-help">ajuda</a></p>
+    </div>
+  </div>
+
+  <div id="screen-over" class="screen hidden">
+    <div class="card">
+      <div class="pixel-title red">VOCÊ MORREU</div>
+      <p id="over-stats"></p>
+      <button id="btn-restart">↻ Acordar de novo</button>
+    </div>
+  </div>
+
+  <footer>pixel art procedural • <a href="#" id="link-help2">ajuda (H)</a></footer>
+</div>
+<script src="js/game.js"></script>
+</body>
+</html>
