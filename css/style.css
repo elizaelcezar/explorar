@@ -60,9 +60,11 @@ body{
 #hint{position:absolute;bottom:5px;left:0;right:0;text-align:center;font-size:11px;background:rgba(0,0,0,.5);padding:3px}
 #touch-controls{display:none;position:absolute;inset:auto 0 44px 0;justify-content:space-between;align-items:flex-end;padding:0 14px;pointer-events:none;z-index:6}
 #side-actions{position:absolute;right:8px;top:112px;display:flex;flex-direction:column;gap:8px;z-index:6}
-#side-actions button{width:60px;height:60px;border-radius:50%;font-size:22px;background:rgba(33,38,45,.85);border:2px solid rgba(255,255,255,.4);color:#fff;cursor:pointer;font-family:inherit;line-height:1}
-#side-actions button small{display:block;font-size:9px;opacity:.8;margin-top:1px}
-#side-actions button:active{transform:scale(.93)}
+#combat-actions{position:absolute;right:8px;top:256px;display:flex;flex-direction:column;gap:8px;z-index:6}
+#side-actions button,#combat-actions button{width:60px;height:60px;border-radius:50%;font-size:22px;background:rgba(33,38,45,.85);border:2px solid rgba(255,255,255,.4);color:#fff;cursor:pointer;font-family:inherit;line-height:1}
+#side-actions button small,#combat-actions button small{display:block;font-size:9px;opacity:.8;margin-top:1px}
+#side-actions button:active,#combat-actions button:active{transform:scale(.93)}
+#btn-atk{border-color:#f85149!important}
 #joystick{width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.35);position:relative;pointer-events:auto;touch-action:none}
 #stick{position:absolute;left:50%;top:50%;width:54px;height:54px;border-radius:50%;background:rgba(63,185,80,.85);border:2px solid #fff;transform:translate(-50%,-50%)}
 #touch-btns{display:flex;gap:8px;pointer-events:auto}
@@ -103,6 +105,7 @@ footer a{color:var(--blue)}
 @media(pointer:coarse){
   #touch-controls{display:flex}
   #side-actions{top:84px}
+  #combat-actions{display:none}
   #hint{display:none}
   #hotbar{bottom:170px;max-width:96vw;overflow-x:auto}
   #minimap{width:64px;height:64px}

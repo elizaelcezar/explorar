@@ -23,12 +23,13 @@ Ande em linha reta e você volta ao mesmo lugar — o mundo tem **wrap-around** 
 | Mouse / Espaço | atacar |
 | **E** | **agir**: coletar, pegar loot, abrir 🎁, usar 🗿/🏛️/🔮, embarcar no foguete, **embarcar no ⛵, mergulhar 🏊, lançar a 🎣, fisgar** |
 | **R** | jogar a **tarrafa 🕸️** na água (pega cardumes) |
+| **1 / 2 / 3** | equipar a **mão 🤜**: punhos, 🪓 machado (coleta 2x, +dano), 🗡️/⚔️ espadas (+dano) — ou toque no 🤜 |
 | Q | comer (escolhe sozinho a melhor comida) |
 | T | acender/apagar tocha |
 | C / B | criar / construir |
 | H | ajuda |
 
-Só **2 botões de ação** na barra (🍖 comer, 🔥 tocha) + Criar e Construir no topo. Sem spam de avisos: uma dica fina de contexto diz o que o **E** faz agora, e a missão atual fica numa pílula no topo.
+Botões de ação na barra (🍖 comer, 🔥 tocha, 🤜 mão) + Criar/Construir e ✋/⚔️ na lateral direita. Sem spam de avisos: uma dica fina de contexto diz o que o **E** faz agora, e a missão atual fica numa pílula no topo.
 
 ## ✨ Sistemas
 

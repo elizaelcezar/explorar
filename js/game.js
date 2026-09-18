@@ -168,7 +168,7 @@ function newPlayer(x,y){
   return {
     x, y, r:10, hp:100, maxHp:100, hunger:100, stamina:100,
     speed:135, facing:1, moving:false, frame:0, animT:0,
-    atk:8, atkCD:0, hurtCD:0, xp:0, level:1, xpNext:60,
+    atk:6, atkCD:0, hurtCD:0, xp:0, level:1, xpNext:60, hand:"none",
     inv:{wood:0, stone:0, fiber:0, fruit:0, raw:0, cooked:0, bandage:0, torch:0, egg:0, fish:0, pearl:0, rod:0, net:0, boat:0},
     tools:{axe:false, sword:0},
     torchLit:false, torchFuel:0, sheltered:false, mounted:null,
@@ -582,9 +582,9 @@ function updateQuestHUD(){
 
 // ---------- receitas / construções ----------
 const RECIPES=[
-  {id:"axe", icon:"🪓", name:"Machado", cost:{wood:3,stone:2}, desc:"Coleta 2x. +2 dano.", can:()=>!player.tools.axe, apply(){player.tools.axe=true; player.atk+=2;}},
-  {id:"sword1", icon:"🗡️", name:"Espada", cost:{wood:2,stone:2}, desc:"+8 dano.", can:()=>player.tools.sword<1, apply(){player.tools.sword=1; player.atk+=8;}},
-  {id:"sword2", icon:"⚔️", name:"Espada Afiada", cost:{wood:3,stone:4,fiber:2}, desc:"+12 dano. Perto da bancada.", can:()=>player.tools.sword===1, needBench:true, apply(){player.tools.sword=2; player.atk+=12;}},
+  {id:"axe", icon:"🪓", name:"Machado", cost:{wood:3,stone:2}, desc:"Na mão: coleta 2x e +4 dano.", can:()=>!player.tools.axe, apply(){player.tools.axe=true; player.hand="axe";}},
+  {id:"sword1", icon:"🗡️", name:"Espada", cost:{wood:2,stone:2}, desc:"Na mão: +10 dano.", can:()=>player.tools.sword<1, apply(){player.tools.sword=1; player.hand="sword1";}},
+  {id:"sword2", icon:"⚔️", name:"Espada Afiada", cost:{wood:3,stone:4,fiber:2}, desc:"Na mão: +16 dano. Perto da bancada.", can:()=>player.tools.sword===1, needBench:true, apply(){player.tools.sword=2; player.hand="sword2";}},
   {id:"vest", icon:"🦺", name:"Colete", cost:{fiber:3,wood:2}, desc:"+20 vida máx. Perto da bancada.", needBench:true, apply(){player.maxHp+=20; player.hp=Math.min(player.maxHp,player.hp+20);}},
   {id:"bandage", icon:"🩹", name:"Bandagem x2", cost:{fiber:2}, desc:"Cura 40 cada (Q usa a melhor comida; bandagem pelo 3).", apply(){player.inv.bandage+=2;}},
   {id:"torchkit", icon:"🔥", name:"Tochas x2", cost:{wood:2,fiber:1}, desc:"Luz portátil (T). Cada uma dura 75s.", apply(){player.inv.torch+=2; if(player.torchFuel<=0) player.torchFuel=75;}},
@@ -1157,7 +1157,7 @@ function doAction(){
   if(player.dead||!started) return;
   if(interior){ interiorAction(); return; }
   if(player.mounted){ dismount(); return; }
-  // no barco: E pega drop flutuante, desembarca na margem; longe dela, pesca
+  // no barco: E pega drop, desembarca na margem; longe dela, colhe ou pesca
   if(player.sailing){
     if(player.fishing&&player.fishing.phase==="bite"){ reelFish(); return; }
     if(pickupNearDrop(52)) return;
@@ -1166,17 +1166,21 @@ function doAction(){
       else toast("⛵ Sem espaço p/ desembarcar",1800);
       return;
     }
+    const wr2=nearestResource(64);
+    if(wr2&&(wr2.kind==="kelp"||wr2.kind==="clam"||wr2.kind==="coral")){ harvest(wr2); return; }
     if(player.inv.rod){
       if(!player.fishing) castRod();
       return;
     }
     toast("⛵ Reme até a margem p/ desembarcar (E)",1800); return;
   }
-  // nadando: E pega drop por perto ou sai da água
+  // nadando: E pega drop, colhe fundo do mar ou sai da água
   if(player.swimming){
     if(pickupNearDrop(46)) return;
-    if(leaveWater()) toast("🦶 Em terra!",1400);
-    else toast("🌊 Longe da margem!",1600);
+    if(leaveWater()){ toast("🦶 Em terra!",1400); return; }
+    const wr=nearestResource(64);
+    if(wr&&(wr.kind==="kelp"||wr.kind==="clam"||wr.kind==="coral")){ harvest(wr); return; }
+    toast("🌊 Longe da margem!",1600);
     return;
   }
   // fisgou? E recolhe na hora (antes de foguete/POI p/ não perder a janela)
@@ -1201,7 +1205,7 @@ function doAction(){
   if(nearestWaterSpot(50)) diveIn();
 }
 function harvest(r){
-  const bonus=player.tools.axe?2:1;
+  const bonus=player.hand==="axe"?2:1;
   const bx=r.tx*TILE+16, by=r.ty*TILE+16;
   if(r.kind==="tree"){
     r.hp-=bonus; burst(bx,by,"#7b4a2b",6);
@@ -1283,7 +1287,7 @@ function doAttack(forceAngle){
     hit=true;
     const crit=Math.random()<0.12;
     const atkBuff=elapsed<(player.buffAtkUntil||0)?1.5:1;
-    const dmg=Math.round(player.atk*atkBuff*rand(0.85,1.2)*(crit?1.8:1));
+    const dmg=Math.round(atkTotal()*atkBuff*rand(0.85,1.2)*(crit?1.8:1));
     e.hp-=dmg; e.flash=0.15;
     const ka=angTo(player.x,player.y,e.x,e.y);
     e.x=wrap(e.x+Math.cos(ka)*10,WPX); e.y=wrap(e.y+Math.sin(ka)*10,WPY);
@@ -1314,7 +1318,7 @@ function doAttack(forceAngle){
     if(da>arc/2) continue;
     hit=true;
     const atkBuff=elapsed<(player.buffAtkUntil||0)?1.5:1;
-    const dmg=Math.round(player.atk*atkBuff*rand(0.85,1.2));
+    const dmg=Math.round(atkTotal()*atkBuff*rand(0.85,1.2));
     c.hp-=dmg;
     const ka=angTo(player.x,player.y,c.x,c.y);
     c.x=wrap(c.x+Math.cos(ka)*12,WPX); c.y=wrap(c.y+Math.sin(ka)*12,WPY);
@@ -1340,7 +1344,7 @@ function doAttack(forceAngle){
     if(da>arc/2) continue;
     hit=true;
     const atkBuff2=elapsed<(player.buffAtkUntil||0)?1.5:1;
-    const dmg2=Math.round(player.atk*atkBuff2*rand(0.85,1.2));
+    const dmg2=Math.round(atkTotal()*atkBuff2*rand(0.85,1.2));
     s.hp-=dmg2; s.flash=0.15;
     const ka2=angTo(player.x,player.y,s.x,s.y);
     const ox=s.x, oy=s.y;
@@ -1377,6 +1381,39 @@ function doAttack(forceAngle){
 }
 
 // ---------- comer / tocha ----------
+// ---------- mão: equipa ferramenta/arma (1/2/3 ou toque no 🤜) ----------
+function handBonus(){
+  if(!player) return 0;
+  if(player.hand==="axe") return 4;
+  if(player.hand==="sword1") return 10;
+  if(player.hand==="sword2") return 16;
+  return 0;
+}
+function atkTotal(){ return (player?player.atk:6)+handBonus(); }
+function handIcon(){
+  return {none:"🤜",axe:"🪓",sword1:"🗡️",sword2:"⚔️"}[(player&&player.hand)||"none"]||"🤜";
+}
+function handName(){
+  return {none:"punhos",axe:"machado",sword1:"espada",sword2:"espada afiada"}[(player&&player.hand)||"none"]||"punhos";
+}
+function equipHand(id){
+  if(!player||player.dead) return false;
+  if(id==="axe"&&!player.tools.axe) return false;
+  if(id==="sword"&&(player.tools.sword||0)<1) return false;
+  if(id==="sword") id=player.tools.sword>=2?"sword2":"sword1";
+  player.hand=id;
+  toast("🤜 "+handName(),1400);
+  beep(520,0.07,"triangle",0.04);
+  updateHUD();
+  return true;
+}
+function cycleHand(){
+  const opts=["none"];
+  if(player.tools.axe) opts.push("axe");
+  if((player.tools.sword||0)>=1) opts.push("sword");
+  const cur=(player.hand==="sword1"||player.hand==="sword2")?"sword":(player.hand||"none");
+  equipHand(opts[(opts.indexOf(cur)+1)%opts.length]);
+}
 function eatBest(){
   const inv=player.inv;
   if(inv.cooked>0){inv.cooked--;player.hunger=clamp(player.hunger+40,0,100);player.hp=clamp(player.hp+12,0,player.maxHp);}
@@ -1432,6 +1469,8 @@ function load(){
     enterPlanet(planetIdx, seeds[PLANETS[planetIdx].id], true);
     const st=s.player.stats||{};
     Object.assign(player,s.player);
+    player.atk=6; // dano agora vem da mão equipada (saves antigos acumulavam)
+    if(!player.hand) player.hand="none";
     player.stats={wood:0,stone:0,fiber:0,kills:0,craftedTorch:0,boss:false,visited:{verde:true},chests:0,poisUsed:0,...st};
     player.inv={wood:0,stone:0,fiber:0,fruit:0,raw:0,cooked:0,bandage:0,torch:0,egg:0,fish:0,pearl:0,rod:0,net:0,boat:0,...s.player.inv};
     player.sailing=false; player.swimming=false; player.fishing=null; player.netCD=0;
@@ -1495,7 +1534,8 @@ function updateHUD(){
   $("breath-row").style.opacity=(player.swimming||player.breath<player.breathMax-0.5)?1:0.35;
   $("level").textContent=player.level; $("xp").textContent=player.xp; $("xp-next").textContent=player.xpNext;
   const hasBuff=elapsed<(player.buffAtkUntil||0);
-  $("atk").textContent=player.atk+(hasBuff?" ⚡":"");
+  $("atk").textContent=atkTotal()+(hasBuff?" ⚡":"");
+  $("c-hand").textContent=handIcon();
   $("xp-fill").style.width=(player.xp/player.xpNext*100)+"%";
   $("c-food").textContent=(player.inv.fruit||0)+(player.inv.cooked||0)+(player.inv.egg||0)+(player.inv.fish||0)+(player.inv.pearl||0);
   $("c-torch").textContent=(player.inv.torch||0)+(player.torchLit?" 🔥":"");
@@ -1660,7 +1700,7 @@ function drawPlayer(x,y){
   if(attackAnim>0){
     const a=player.facing>0?0.5:-0.5;
     ctx.save();ctx.translate(x,y-6);ctx.rotate(a+(0.18-attackAnim)*8*(player.facing>0?1:-1));
-    px(player.facing>0?6:-12,-2,10,3,player.tools.sword>0?"#e5e7eb":"#92400e");
+    px(player.facing>0?6:-12,-2,10,3,player.hand==="sword2"?"#fde047":player.hand==="sword1"?"#e5e7eb":player.hand==="axe"?"#9ca3af":"#92400e");
     ctx.restore();
   }
   if(player.torchLit && player.torchFuel>0){
@@ -1668,6 +1708,10 @@ function drawPlayer(x,y){
     px(tx2-1,ty2-4,3,9,"#78350f");
     px(tx2-3,ty2-9,7,6,"#f59e0b"); px(tx2-2,ty2-8,5,4,"#fde047");
   }
+  const hx=x+player.facing*13, hy=y-8;
+  if(player.hand==="axe"){ px(hx-2,hy-6,3,10,"#92400e"); px(hx-4,hy-8,7,5,"#9ca3af"); }
+  else if(player.hand==="sword1"){ px(hx-1,hy-10,2,12,"#e5e7eb"); px(hx-3,hy-4,6,2,"#b45309"); }
+  else if(player.hand==="sword2"){ px(hx-1,hy-11,2,14,"#fde047"); px(hx-3,hy-4,6,2,"#7c2d12"); }
   if(hurtFlash>0){ctx.fillStyle=`rgba(255,0,0,${hurtFlash})`;ctx.fillRect(x-12,y-22,24,30);}
 }
 function drawTree(x,y,r){
@@ -2492,6 +2536,9 @@ window.addEventListener("keydown",(e)=>{
   if(k===" ") doAttack();
   if(k==="t") toggleTorch();
   if(k==="r") throwNet();
+  if(k==="1") equipHand("none");
+  if(k==="2") equipHand("axe");
+  if(k==="3") equipHand("sword");
   if(k==="c") toggle("panel-craft");
   if(k==="b") toggle("panel-build");
   if(k==="h"||k==="escape") toggle("panel-help");
@@ -2612,6 +2659,9 @@ function toggle(id,force){
 document.querySelectorAll("[data-close]").forEach(b=>b.onclick=()=>$(b.dataset.close).classList.add("hidden"));
 $("slot-eat").onclick=()=>eatBest();
 $("slot-torch").onclick=()=>toggleTorch();
+$("slot-hand").onclick=()=>cycleHand();
+$("btn-act").onclick=()=>doAction();
+$("btn-atk").onclick=()=>doAttack();
 $("btn-craft").onclick=()=>toggle("panel-craft");
 $("btn-build").onclick=()=>toggle("panel-build");
 $("btn-sound").onclick=(e)=>{audioOn=!audioOn;e.target.textContent=audioOn?"🔊":"🔇";};
