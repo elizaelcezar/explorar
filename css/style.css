@@ -24,8 +24,26 @@ body{
 #bar-hp{background:linear-gradient(90deg,#ff4d4d,#ff8080)}
 #bar-hunger{background:linear-gradient(90deg,#ff9f1c,#ffd166)}
 #bar-stamina{background:linear-gradient(90deg,#2ec4b6,#80ffdb)}
-#bar-breath{background:linear-gradient(90deg,#0284c7,#7dd3fc)}
+#bar-o2{background:linear-gradient(90deg,#0284c7,#7dd3fc)}
+#bar-energy{background:linear-gradient(90deg,#a855f7,#e9d5ff)}
 #breath-row{transition:opacity .3s}
+#comms-log{display:flex;flex-direction:column;gap:6px;margin:10px 0;max-height:150px;overflow:auto}
+.comm{background:#0d1322;border:2px solid var(--border);border-radius:10px;padding:7px 10px;font-size:12px;line-height:1.5}
+.comm b{color:var(--blue)}
+.quiz-q{font-size:14px;margin:8px 0;line-height:1.5}
+.quiz-opt{display:block;width:100%;text-align:left;background:#21262d;border:2px solid #444;border-radius:10px;color:#fff;padding:9px 12px;margin:6px 0;font-size:13px;cursor:pointer;font-family:inherit}
+.quiz-opt:hover{border-color:var(--blue)}
+.quiz-opt.ok{border-color:var(--green);background:#12351f}
+.quiz-opt.no{border-color:var(--red);background:#3d1414}
+.fact-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;margin:8px 0}
+.fact-grid div{background:#0d1322;border-radius:8px;padding:6px 8px}
+.makeup-bar{height:8px;background:#222;border-radius:4px;overflow:hidden;margin-top:3px}
+.makeup-bar div{height:100%}
+#mission-list{display:flex;flex-direction:column;gap:6px;margin:8px 0}
+.mission{background:#0d1322;border:2px solid var(--border);border-radius:10px;padding:8px 10px;font-size:13px}
+.mission.done{border-color:var(--green);opacity:.75}
+.mission.now{border-color:#ffd166}
+.planet-lock{opacity:.55}
 .bar-txt{font-size:11px;min-width:26px;text-align:right}
 #level-row{font-size:11px;margin-top:4px}
 #shelter-ico{display:none}
