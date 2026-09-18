@@ -342,7 +342,8 @@ function renderComms(){
   if(!last.length) w.innerHTML=`<div class="comm"><b>ARIA:</b> Canal aberto, cadete. Escolha um planeta e boa missão! 📡</div>`;
   for(const m of last){
     const d=document.createElement("div"); d.className="comm";
-    d.innerHTML=`<b>${m.from}:</b> ${m.text}`;
+    d.innerHTML=`<b>${m.from}:</b> ${m.text} <button class="quiz-opt" style="display:inline-block;width:auto;padding:2px 10px;margin:4px 0 0;" title="Ouvir">🔊</button>`;
+    d.querySelector("button").onclick=()=>speak(m.from+": "+m.text);
     w.appendChild(d);
   }
   const row=document.createElement("div");
@@ -729,6 +730,11 @@ function openQuiz(){
   document.querySelector("#panel-quiz .panel-head h2").textContent="🛰️ Quiz da ARIA";
   const w=$("quiz-body");
   w.innerHTML=`<div class="quiz-q">🤖 <b>ARIA pergunta:</b> ${q.q}</div>`;
+  const rp=document.createElement("button");
+  rp.className="quiz-opt"; rp.textContent="🔊 ouvir de novo";
+  rp.onclick=()=>speak(q.q+" Opções: "+q.opts.join(". "));
+  w.appendChild(rp);
+  speak(q.q+" Opções: "+q.opts.join(". "));
   q.opts.forEach((op,i)=>{
     const btn=document.createElement("button");
     btn.className="quiz-opt"; btn.textContent=op;
@@ -800,10 +806,13 @@ function renderMissions(){
     w.appendChild(d);
   }
   const mc=$("mission-comms");
-  mc.innerHTML="<h4>📻 Mensagens</h4>";
+  mc.innerHTML="<h4>📻 Mensagens <button id='mis-speak' class='quiz-opt' style='display:inline-block;width:auto;padding:2px 10px;' title='Ouvir missão'>🔊 missão</button></h4>";
+  const msb=document.getElementById("mis-speak");
+  if(msb) msb.onclick=()=>speakMission();
   for(const m of state.comms.slice(-5)){
     const d=document.createElement("div"); d.className="comm";
-    d.innerHTML=`<b>${m.from}:</b> ${m.text}`;
+    d.innerHTML=`<b>${m.from}:</b> ${m.text} <button class="quiz-opt" style="display:inline-block;width:auto;padding:2px 10px;margin:4px 0 0;" title="Ouvir">🔊</button>`;
+    d.querySelector("button").onclick=()=>speak(m.from+": "+m.text);
     mc.appendChild(d);
   }
 }
@@ -869,6 +878,55 @@ function updateContextTip(){
   el.classList.add("hidden");
 }
 
+// ---------- guia do objetivo (seta p/ quem ainda não lê) ----------
+function objectiveTarget(){
+  try{
+    if(mode!=="surface"||!player||player.dead) return null;
+    const ms=missionsFor(P());
+    const idx=ms.findIndex(m=>!m.d());
+    if(idx<0) return null;
+    if(idx===0){
+      let best=null,bd=1e12;
+      for(const r of resources){
+        if(r.kind!=="amostra") continue;
+        const d=wdist(player.x,player.y,r.tx*TILE+16,r.ty*TILE+16);
+        if(d<bd){bd=d;best=r;}
+      }
+      if(best) return {x:best.tx*TILE+16,y:best.ty*TILE+16};
+    } else if(idx===3){
+      const f=nearestFauna(1e9);
+      if(f) return {x:f.x,y:f.y};
+    } else if(idx===5){
+      const sh=buildings.find(b=>b.kind==="shuttle");
+      if(sh) return {x:sh.tx*TILE+16,y:sh.ty*TILE+16};
+    } else if(idx===6){
+      const an=buildings.find(b=>b.kind==="antena");
+      if(an) return {x:an.tx*TILE+16,y:an.ty*TILE+16};
+    }
+  }catch(e){}
+  return null;
+}
+// ---------- voz alta (acessibilidade pré-alfabetizados) ----------
+let speechOn=true;
+function speak(t){
+  try{
+    if(!speechOn||!("speechSynthesis" in window)) return;
+    window.speechSynthesis.cancel();
+    const clean=String(t).replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}\u{2190}-\u{21FF}\u{2300}-\u{23FF}]/gu," ").replace(/[*_#<>]/g," ").replace(/\s+/g," ").trim();
+    if(!clean) return;
+    const u=new SpeechSynthesisUtterance(clean);
+    u.lang="pt-BR"; u.rate=0.95;
+    window.speechSynthesis.speak(u);
+  }catch(e){}
+}
+function speakMission(){
+  try{
+    if(mode!=="surface"){ speak("Escolha um planeta no mapa para viajar!"); return; }
+    const ms=missionsFor(P());
+    const cur=ms.find(m=>!m.d());
+    speak(cur?("Sua missão: "+cur.t):(bs().done?"Colônia pronta! Parabéns!":"Missão cumprida!"));
+  }catch(e){}
+}
 // ---------- partículas ----------
 function burst(x,y,color,n){for(let i=0;i<n;i++)particles.push({x,y,vx:rand(-70,70),vy:rand(-70,70),life:rand(.25,.6),t:0,color,size:irand(2,4)});}
 function addFloater(x,y,txt,color){floaters.push({x,y,txt,color,t:0,life:1.1});}
@@ -1152,6 +1210,24 @@ function render(){
   }
   drawPlayer(SX(player.x),SY(player.y));
   drawSuitLight(SX(player.x),SY(player.y));
+  // seta-guia: anel pulsante no alvo + seta ao redor do cadete
+  const TGT=objectiveTarget();
+  if(TGT&&!player.dead){
+    const tx=SX(TGT.x), ty=SY(TGT.y);
+    if(tx>-20&&ty>-20&&tx<vw+20&&ty<vh+20){
+      const pr=14+Math.sin(elapsed*5)*4;
+      ctx.strokeStyle="#ffd166"; ctx.lineWidth=3;
+      ctx.beginPath(); ctx.arc(tx,ty,pr,0,7); ctx.stroke();
+    }
+    if(wdist(player.x,player.y,TGT.x,TGT.y)>52){
+      const a=angTo(player.x,player.y,TGT.x,TGT.y);
+      const ax=SX(player.x)+Math.cos(a)*38, ay=SY(player.y)+Math.sin(a)*38;
+      ctx.save(); ctx.translate(ax,ay); ctx.rotate(a);
+      ctx.fillStyle="#ffd166";
+      ctx.beginPath(); ctx.moveTo(11,0); ctx.lineTo(-5,-8); ctx.lineTo(-5,8); ctx.closePath(); ctx.fill();
+      ctx.restore();
+    }
+  }
   for(const p of particles){ctx.fillStyle=p.color;ctx.globalAlpha=1-p.t/p.life;ctx.fillRect(SX(p.x),SY(p.y),p.size,p.size);}
   ctx.globalAlpha=1;
   ctx.font="bold 12px monospace"; ctx.textAlign="center";
@@ -1329,6 +1405,7 @@ $("link-help").onclick=(e)=>{e.preventDefault();toggle("panel-help");};
 $("link-help2").onclick=(e)=>{e.preventDefault();toggle("panel-help");};
 $("planet-chip").onclick=()=>{ if(mode==="ship"){ renderMap(); toggle("panel-map",true); } };
 $("btn-keep").onclick=()=>{ document.querySelector("#screen-win").classList.add("hidden"); };
+$("btn-speech").onclick=(e)=>{ speechOn=!speechOn; try{window.speechSynthesis.cancel();}catch(_){} e.target.textContent=speechOn?"voz: ligada":"voz: desligada"; toast(speechOn?"🔊 Voz ligada":"🔇 Voz desligada",1500); };
 
 // ---------- início ----------
 function startGame(useSave){
@@ -1361,7 +1438,7 @@ function isMobileLayout(){
   return (window.matchMedia && window.matchMedia("(pointer:coarse)").matches);
 }
 function fitCanvas(){
-  ZOOM = isMobileLayout()?1.1:1.5;
+  ZOOM = isMobileLayout()?1.6:2.2;
 }
 window.addEventListener("resize",fitCanvas);
 window.addEventListener("load", ()=>{
@@ -1370,6 +1447,7 @@ window.addEventListener("load", ()=>{
   if(s&&s.unlocked) $("btn-continue").classList.remove("hidden");
   $("btn-start").onclick=()=>startGame(false);
   $("btn-continue").onclick=()=>startGame(true);
+  $("btn-listen").onclick=()=>speak("Ano 2150. A nave Esperança levou mil colonos dormindo até o Sistema Solar. Você, cadete, foi acordado pela inteligência ARIA. Desça aos planetas, aprenda os segredos de cada um e prepare abrigo, comida e energia para os colonos. Siga a seta amarela!");
 });
 
 function updateContextTip(){
