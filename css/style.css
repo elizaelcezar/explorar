@@ -105,7 +105,8 @@ footer a{color:var(--blue)}
 @media(pointer:coarse){
   #touch-controls{display:flex}
   #side-actions{top:84px}
-  #combat-actions{display:none}
+  #combat-actions{display:flex;top:auto;bottom:238px}
+  #t-act,#t-atk{display:none}
   #hint{display:none}
   #hotbar{bottom:170px;max-width:96vw;overflow-x:auto}
   #minimap{width:64px;height:64px}
